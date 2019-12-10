@@ -93,8 +93,10 @@ xlabel('Time(s)');
 %Question 7: 
 %Numerical Simulation of Response (forced)
 tforce = 0:0.01:10; tforce = tforce(:);
+k_force = [k1 k2; -k1*L1 k2*L2];
+c_force = [c1 c2; -c1*L1 c2*L2];
 s0 = zeros(4,1);
-f = @(t,s) [s(3); s(4); M\([K*[r1(t)-s(1);r2(t)-s(2)]]+C*[r1_dot(t)-s(3);r2_dot(t)-s(4)])];
+f = @(t,s) [s(3); s(4); M\([k_force*[r1(t);r2(t)]+c_force*[r1_dot(t);r2_dot(t)]-K*[s(1);s(2)]]-C*[s(3);s(4)])];
 [t,s] = ode45(f,tforce,s0);
 figure('Name','Problem 7: Forced Vibration','NumberTitle','off');
 subplot(2,1,1)
@@ -116,6 +118,3 @@ ylabel('Pitch Velocity (rad/s)');
 legend('Mode Shape 1', 'Mode Shape 2');
 xlabel('Time(s)');
 
-
-
-%%THIS IS A TEST
