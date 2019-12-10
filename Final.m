@@ -97,7 +97,7 @@ k_force = [k1 k2; -k1*L1 k2*L2];
 c_force = [c1 c2; -c1*L1 c2*L2];
 s0 = zeros(4,1);
 F = @(t) [k_force*[r1(t);r2(t)]+c_force*[r1_dot(t);r2_dot(t)]];
-f = @(t,s) [s(3); s(4); M\([F(t)-K*[s(1);s(2)]]-C*[s(3);s(4)])];
+f = @(t,s) [s(3); s(4); M\(F(t)-K*[s(1);s(2)]-C*[s(3);s(4)])];
 [t,s] = ode45(f,tforce,s0);
 figure('Name','Problem 7: Forced Vibration','NumberTitle','off');
 subplot(2,1,1)
