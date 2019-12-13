@@ -7,6 +7,8 @@ lam = 5;
 v0 = 50/3600*1000;
 x0 = [0 0];
 A = 0.01;
+m = 2000;
+Ic = 2500;
 T = lam/v0;
 
 %Road Profile
@@ -90,6 +92,44 @@ ylabel('Pitch velocity (rad/s)');
 legend('Mode Shape 1', 'Mode Shape 2');
 xlabel('Time(s)');
 
+%Question 6: 
+s = tf('s');
+nf = 500; fmin = 0.1; fmax = 1000;
+fvec = logspace(log10(fmin),log10(fmax),nf);
+wvec = 2*pi*fvec;
+a1 = m*s^2 + (c1+c2)*s + (k1 + k2);
+a2 = Ic*s^2 + (c1*L1^2 + c2*L2^2)*s + (k1*L1^2 + k2*L2^2);
+b = (c1*L1 - c2*L2)*s + (k1*L1 - k2*L2); n = a1*a2-b^2;
+
+detd = 1/(a1*a2-b^2);
+
+ab = [a2 -b; -b a1];
+r = [c1*s+k1        c2*s+k2;
+    c1*L1*s+k1*L1   -c2*L2*s-k2*L2];
+
+ss = ab*r*detd;
+
+for m = 1:2
+    for n = 1:2
+        sys = ss(m,n);
+        [mag, phase] = bode(sys, wvec);
+        mag = squeeze(mag); phase = squeeze(phase);
+        figure
+        subplot(211),semilogx(fvec,20*log10(mag), 'LineWidth',2)
+        xlabel('Frequency [Hz]')
+        ylabel('Mag (db of m/m)')
+        title(sprintf('Frequency Reponse Y%i/R%i',m,n))
+        grid
+        subplot(212), semilogx(fvec, phase,'LineWidth',2)
+        xlabel('Frequency [Hz]')
+        ylabel('Phase (deg)')
+        title(sprintf('Frequency ReponseY%i/R%i',m,n))
+        grid
+    end
+
+end
+
+
 %Question 7: 
 %Numerical Simulation of Response (forced)
 tforce = 0:0.01:10; tforce = tforce(:);
@@ -118,4 +158,8 @@ plot(t,s(:,4));
 ylabel('Pitch Velocity (rad/s)');
 legend('Mode Shape 1', 'Mode Shape 2');
 xlabel('Time(s)');
+
+
+%Question 8:
+
 
