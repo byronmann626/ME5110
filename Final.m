@@ -15,10 +15,10 @@ T = lam/v0;
 r1 = @(t) A*sin(2*pi/T*t);
 r2 = @(t) A*sin(2*pi/T*t+pi);
 r1_dot = @(t) A*(2*pi/T)*cos(2*pi/T*t);
-r2_dot = @(t) A*(2*pi/T)*cos(2*pi/T*t);
+r2_dot = @(t) A*(2*pi/T)*cos(2*pi/T*t+pi);
 
 %K,C, A, M Matrices
-M =[2000 0; 0 2500];
+M =[m 0; 0 Ic];
 K = [k1+k2 k1*L1-k2*L2; k1*L1-k2*L2 k1*L1^2+k2*L2^2];
 C = [c1+c2 c1*L1-c2*L2; c1*L1-c2*L2 c1*L1^2+c2*L2^2];
 A = [zeros(2,2) eye(2); -M\K -M\C];
@@ -55,7 +55,7 @@ plot(tgrid,sys1_resp(:,1));
 ylabel('Bounce Displacement (m)');
 yyaxis right
 plot(tgrid,sys1_resp(:,2));
-ylabel('Theta (rad)');
+ylabel('Pitch (rad)');
 xlabel('Time (s)');
 title('First Mode Shape');
 subplot(2,1,2)
@@ -64,7 +64,7 @@ plot(tgrid,sys2_resp(:,1));
 ylabel('Displacement (m)');
 yyaxis right
 plot(tgrid,sys2_resp(:,2));
-ylabel('Theta (rad)');
+ylabel('Pitch (rad)');
 xlabel('Time (s)');
 title('Second Mode Shape');
 
@@ -92,41 +92,82 @@ ylabel('Pitch velocity (rad/s)');
 legend('Mode Shape 1', 'Mode Shape 2');
 xlabel('Time(s)');
 
-%Question 6: 
+% %Question 6: 
 s = tf('s');
-nf = 500; fmin = 0.1; fmax = 1000;
-fvec = logspace(log10(fmin),log10(fmax),nf);
+
+T = [m*s^2 + (c1+c2)*s + (k1 + k2) , (c1*L1 - c2*L2)*s + (k1*L1 - k2*L2);
+    (L1*c1 - L2*c2)*s + (L1*k1 - L2*k2) , Ic*s^2 + ((L2^2) *c2 + (L1^2) *c1)*s + ((L2^2)*k2 + (L1^2) *k1)];
+
+H = [(k1 + c1*s) (k2 + c2*s);
+    (k1*L1 + c1*L1*s) (k2*L2 - c2*L2*s)];
+
+
+R = ((m*s^2 + (c1+c2)*s + (k1 + k2))*(Ic*s^2 + ((L2^2) *c2 + (L^2) *c1)*s + ((L2^2) *k2 + (L1^2) *k1)) - ((L1*c1 - L2*c2)*s + (L1*k1 - L2*k2))*((c1*L1 - c2*L2)*s + (k1*L1 - k2*L2)));
+
+Tmod = [Ic*s^2 + ((L2^2) *c2 + (L1^2) *c1)*s + ((L2^2) *k2 + (L1^2) *k1) -((c1*L1 - c2*L2)*s + (k1*L1 - k2*L2));
+    -((L1*c1 - L2*c2)*s + (L1*k1 - L2*k2))  m*s^2 + (c1+c2)*s + (k1 + k2)];
+
+TT1 = T\H
+
+
+
+fprintf('\n\nProblem 6:\n\n');
+fprintf('Transfer Functions:\n')
+fprintf('Y(s)/R1(s):\n')
+TT1(1,1)
+fprintf('Y(s)/R2(s):\n')
+TT1(1,2)
+fprintf('Theta(s)/R1(s):\n')
+TT1(2,1)
+fprintf('Theta(s)/R2(s):\n')
+TT1(2,2)
+
+nf = 500;
+fmin = .01;
+fmax = 1000;
+fvec = logspace(log10(fmin), log10(fmax),nf);
 wvec = 2*pi*fvec;
-a1 = m*s^2 + (c1+c2)*s + (k1 + k2);
-a2 = Ic*s^2 + (c1*L1^2 + c2*L2^2)*s + (k1*L1^2 + k2*L2^2);
-b = (c1*L1 - c2*L2)*s + (k1*L1 - k2*L2); n = a1*a2-b^2;
-
-detd = 1/(a1*a2-b^2);
-
-ab = [a2 -b; -b a1];
-r = [c1*s+k1        c2*s+k2;
-    c1*L1*s+k1*L1   -c2*L2*s-k2*L2];
-
-ss = ab*r*detd;
 
 for m = 1:2
-    for n = 1:2
-        sys = ss(m,n);
-        [mag, phase] = bode(sys, wvec);
-        mag = squeeze(mag); phase = squeeze(phase);
-        figure
-        subplot(211),semilogx(fvec,20*log10(mag), 'LineWidth',2)
-        xlabel('Frequency [Hz]')
-        ylabel('Mag (db of m/m)')
-        title(sprintf('Frequency Reponse Y%i/R%i',m,n))
-        grid
-        subplot(212), semilogx(fvec, phase,'LineWidth',2)
-        xlabel('Frequency [Hz]')
-        ylabel('Phase (deg)')
-        title(sprintf('Frequency ReponseY%i/R%i',m,n))
-        grid
-    end
+    
+    sys = TT1(1,m);
+    [mag,phase] = bode(sys,wvec);
+    mag = squeeze(mag); phase = squeeze(phase);
+    % max(mag)
+    % max(phase)
+    
+    figure('name','Bounce Output Responses')
+    subplot(211), semilogx(fvec,20*log10(mag), 'Linewidth',2)
+    xlabel('Frequency [Hz]')
+    ylabel('Mag (db of m/m)')
+    title(sprintf('Frequency Response Magnitude: Y(s)/R%i(s)',m))
+    grid
+    
+    subplot(212), semilogx(fvec,phase,'Linewidth',2)
+    xlabel('Frequency [Hz]')
+    ylabel('Phase [deg]')
+    title(sprintf('Frequency Response Phase: Y(s)/R%i(s)',m))
+    grid
+end
 
+
+for n = 1:2
+    sys2 = TT1(2,n);
+    [mag,phase] = bode(sys2,wvec);
+    mag = squeeze(mag); phase = squeeze(phase);
+    
+    figure('name','Pitch Output Responses')
+    subplot(211), semilogx(fvec,20*log10(mag), 'Linewidth',2)
+    xlabel('Frequency [Hz]')
+    ylabel('Mag (db of m/m)')
+    title(sprintf('Frequency Response Magnitude: Theta(s)/R%i(s)',n))
+    grid
+    
+    subplot(212), semilogx(fvec,phase,'Linewidth',2)
+    xlabel('Frequency [Hz]')
+    ylabel('Phase [deg]')
+    title(sprintf('Frequency Response Phase: Theta(s)/R%i(s)',n))
+    grid
 end
 
 
